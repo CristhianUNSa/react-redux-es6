@@ -37,10 +37,12 @@ class SignupForm extends React.Component{
       this.setState({ errors: {}, isLoading: true });
       this.props.userSignupRequest(this.state)
         .then(
-          () => { this.setState({isLoading: false}); }
+          () => {
+            this.context.router.push('/'); //redirect  
+          }
         )
         .catch(
-          ( {data }) => this.setState({errors: data, isLoading: false})
+          ( { data }) => this.setState({errors: data, isLoading: false})
         );
     }
   }
@@ -109,6 +111,10 @@ class SignupForm extends React.Component{
 
 SignupForm.propTypes = {
   userSignupRequest: React.PropTypes.func.isRequired
+}
+
+SignupForm.contextTypes = {
+  router : React.PropTypes.object.isRequired
 }
 
 export default SignupForm;
