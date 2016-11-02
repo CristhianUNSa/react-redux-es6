@@ -3,6 +3,7 @@ import timezones from '../../data/timezones';
 import classnames from 'classnames';
 import validateInput from '../../../server/shared/validations/signup';
 import TextFieldGroup from '../common/TextFieldGroup';
+import isEmpty from 'lodash/isEmpty';
 
 class SignupForm extends React.Component{
   constructor(props) {
@@ -14,13 +15,42 @@ class SignupForm extends React.Component{
       passwordConfirmation: '',
       timezone: '',
       errors: {},
-      isLoading: false
+      isLoading: false,
+      invalid: false
     };
     this.onChange = this.onChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
+    this.checkUserExists = this.checkUserExists.bind(this);
   }
   onChange(e){
     this.setState({[e.target.name] : e.target.value});
+  }
+  checkAllErrorsEmpty(obj){
+    return Object.keys(obj).every((key)=>{
+      return !obj[key];
+    });
+  }
+  checkUserExists(e){
+    const field = e.target.name;
+    const val = e.target.value;
+    if( val !== ''){
+      this.props.isUserExists(val).then(res=>{
+        let errors = this.state.errors;
+        let invalid = true;
+        console.log(res.data.user, errors)
+        if(res.data.user){
+          errors[field] = 'There is user with such '+ field;
+          invalid = true;
+        }
+        else{
+          errors[field] = '';
+          if(this.checkAllErrorsEmpty(errors)){
+            invalid = false;
+          }
+        }
+        this.setState({ errors, invalid });
+      });
+    }
   }
   isValid(){
     const { errors, isValid } = validateInput(this.state);
@@ -51,7 +81,7 @@ class SignupForm extends React.Component{
     }
   }
   render(){
-    const { errors, isLoading } = this.state;
+    const { errors, isLoading, invalid } = this.state;
     const options = Object.keys(timezones).map(function(key){
       return (
         <option key={timezones[key]} value={timezones[key]}>{key}</option>
@@ -64,6 +94,7 @@ class SignupForm extends React.Component{
           error={errors.username}
           label="Nombre de Usuario"
           onChange={this.onChange}
+          checkUserExists={this.checkUserExists}
           value={this.state.username}
           field="username" 
         />
@@ -71,6 +102,7 @@ class SignupForm extends React.Component{
           error={errors.email}
           label="E-mail"
           onChange={this.onChange}
+          checkUserExists={this.checkUserExists}
           value={this.state.email}
           field="email" 
           type="email"
@@ -106,7 +138,7 @@ class SignupForm extends React.Component{
           {errors.timezone && <span className="help-block">{errors.timezone}</span>}
         </div>
         <div className="form-group">
-          <button type="submit" className="btn btn-primary btn-lg" disabled={isLoading}>Registrarse</button>
+          <button type="submit" className="btn btn-primary btn-lg" disabled={isLoading || invalid}>Registrarse</button>
         </div>
       </form>
     )
@@ -115,7 +147,8 @@ class SignupForm extends React.Component{
 
 SignupForm.propTypes = {
   userSignupRequest: React.PropTypes.func.isRequired,
-  addFlashMessage: React.PropTypes.func.isRequired
+  addFlashMessage: React.PropTypes.func.isRequired,
+  isUserExists: React.PropTypes.func.isRequired
 }
 
 SignupForm.contextTypes = {
